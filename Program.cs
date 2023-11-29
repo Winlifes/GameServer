@@ -12,9 +12,7 @@ namespace GameServer
 
         public string name;
         public int roomId = -1;
-        
-        public GameDate? date = null;
-        
+
     }
 
     public class GameDate
@@ -22,12 +20,17 @@ namespace GameServer
         public int money;
         public int color;
         public int playOrder;
-    
-        public GameDate(int money, int color, int order)
+        public int position;
+        public bool isPoCan;
+        public List<int> property = new();
+
+        public GameDate(int money, int color, int order, int position)
         {
             this.money = money;
             this.color = color;
             this.playOrder = order;
+            this.position = position;
+            isPoCan = false;
         }
     }
 
@@ -35,16 +38,57 @@ namespace GameServer
     {
         public int id;
         public string name;
+        public int price;
         public int level;
+        public int maxLevel;
+        public int up;
+        public string playerName;
+        /// <summary>
+        /// 租金
+        /// </summary>
         public int[] rent;
-        public bool state;
-        public House(int id, string name, int[] rent)
+        public int state;
+        public House(int id, string name, int maxLevel, int price, int up, int[] rent)
         {
             this.id = id;
             this.name = name;
+            this.maxLevel = maxLevel;
+            this.price = price;
+            this.up = up;
             this.level = 0;
             this.rent = rent;
-            state = true;
+            this.state = -1;//默认为未买入
+        }
+    }
+
+    /// <summary>
+    /// 惊喜
+    /// </summary>
+    public class Treasure
+    {
+        public int id;
+        public string name;
+        public string desc;
+        public Treasure(int id, string name, string desc)
+        {
+            this.id = id;
+            this.name = name;
+            this.desc = desc;
+        }
+    }
+    /// <summary>
+    /// 命运
+    /// </summary>
+    public class Fate
+    {
+        public int id;
+        public string name;
+        public string desc;
+        public Fate(int id, string name, string desc)
+        {
+            this.id = id;
+            this.name = name;
+            this.desc = desc;
         }
     }
 
@@ -68,11 +112,32 @@ namespace GameServer
         public int curNum;
         //public int maxNum;
         /// <summary>
-        /// 房间状态
+        /// 是否开局
         /// </summary>
-        public bool roomState;
-        public Dictionary<House, ClientState> houses = new Dictionary<House, ClientState>();
-
+        public bool isBegin;
+        /// <summary>
+        /// 回合数
+        /// </summary>
+        public int count;
+        public int curOrder;
+        /// <summary>
+        /// 对局内数据
+        /// </summary>
+        public Dictionary<string, GameDate> gameDate = new Dictionary<string, GameDate>();
+        public string content = "";
+        public Dictionary<int, House> houses = new Dictionary<int, House>();
+        /// <summary>
+        /// 宝箱
+        /// </summary>
+        public Dictionary<int, Treasure> treasures = new Dictionary<int, Treasure>();
+        /// <summary>
+        /// 命运
+        /// </summary>
+        public Dictionary<int, Fate> fates = new Dictionary<int, Fate>();
+        /// <summary>
+        /// 计时器
+        /// </summary>
+        public int time;
     }
 
     class MainClass
@@ -96,6 +161,10 @@ namespace GameServer
             //Listen
             listenfd.Listen(0);
             Console.WriteLine("[服务器]启动成功\n大富翁服务器测试版本1.0");
+            /// <summary>
+            /// 计时器
+            /// </summary>
+            Timer timer = new Timer(MsgHandler.TimerCallback, null, 0, 1000);
             //checkRead
             List<Socket> checkRead = new List<Socket>();
             //主循环
@@ -183,9 +252,12 @@ namespace GameServer
         public static void Send(ClientState cs, string sendStr)
         {
             byte[] sendBytes = System.Text.Encoding.Default.GetBytes(sendStr);
-            cs.socket.Send(sendBytes);
+            if(cs != null)
+            {
+                cs.socket.Send(sendBytes);
+            }
         }
 
-
     }
+
 }
