@@ -318,6 +318,11 @@ namespace GameServer
             {
                 //无事发生
             }
+            else if (x == 6 || x == 16 || x == 26 || x == 36)
+            {
+                //车站
+                
+            }
             else if (x == 5 || x == 17 || x == 27 || x == 35)
             {
                 //宝箱
@@ -350,6 +355,7 @@ namespace GameServer
 
             string sendStr = "Yao|" + msgArgs + num + "," + num1 + "," + num2 + ",";
             //房主
+            if(MainClass.allPlayers.ContainsKey(rooms[roomId].playerName))
             MainClass.Send(MainClass.allPlayers[rooms[roomId].playerName], sendStr);
             //客户端发出文本信息，服务端需向游戏中所有人广播该文本信息
             foreach (string n in roomPlayers[roomId])
@@ -479,6 +485,27 @@ namespace GameServer
 
         }
 
+        public static void MsgVehicle(ClientState c, string msgArgs)
+        {
+            string[] split = msgArgs.Split(',');
+            string desc = split[0];
+            int roomId = int.Parse(split[1]);
+            string name = split[2];
+            int x = int.Parse(split[3]);
+
+            rooms[roomId].gameDate[name].money -= 500;
+            rooms[roomId].gameDate[name].position = x;
+
+            string sendStr = "Vehicle|" + msgArgs;
+            //房主
+            MainClass.Send(MainClass.allPlayers[rooms[roomId].playerName], sendStr);
+            //客户端发出文本信息，服务端需向游戏中所有人广播该文本信息
+            foreach (string n in roomPlayers[roomId])
+            {
+                MainClass.Send(MainClass.allPlayers[n], sendStr);
+            }
+        }
+
         public static void MsgSkip(ClientState c, string msgArgs)
         {
             string[] split = msgArgs.Split(',');
@@ -536,6 +563,10 @@ namespace GameServer
                 MainClass.Send(MainClass.allPlayers[n], sendStr);
             }
 
+            if (MainClass.allPlayers.Count <= 0 && roomPlayers[roomId].Count <= 0)
+            {
+                rooms.Remove(roomId);
+            }
         }
 
         public static void MsgGameOver(ClientState c, string msgArgs)
@@ -545,6 +576,23 @@ namespace GameServer
             int roomId = int.Parse(split[1]);
             string name = split[2];
             //对局结束后初始化
+
+            foreach (string s in rooms[roomId].gameDate.Keys)
+            {
+                if (rooms[roomId].gameDate[s].isGuaJi)
+                {
+                    roomPlayers[roomId].Remove(s);
+                    rooms[roomId].curNum--;
+                    c.roomId = -1;
+
+                    string sendStr1 = "Exit|" + "desc," + s + "," + roomId + ",";
+
+                    foreach (ClientState cs in MainClass.clients.Values)
+                    {
+                        MainClass.Send(cs, sendStr1);
+                    }
+                }
+            }
 
             rooms[roomId].isBegin = false;
             rooms[roomId].gameDate.Clear();
@@ -651,13 +699,31 @@ namespace GameServer
                         r.count++;
                         string sendStr = "ForceSkip|" + r.id + "," + r.curOrder + "," + name + ",";
 
-                        //房主
-                        MainClass.Send(MainClass.allPlayers[r.playerName], sendStr);
-                        //客户端发出文本信息，服务端需向游戏中所有人广播该文本信息
-                        foreach (string n in roomPlayers[r.id])
+
+                        if (!MainClass.allPlayers.ContainsKey(rooms[r.id].playerName) && roomPlayers[r.id].Count <= 0)
                         {
-                            MainClass.Send(MainClass.allPlayers[n], sendStr);
+                            rooms.Remove(r.id);
+                            Console.WriteLine(System.DateTime.Now.ToString("G") + "Destroy Room " +  r.id);
+                            string sendStr1 = "Destroy|" + "desc," + r.id + ",";
+                            foreach (ClientState cs in MainClass.clients.Values)
+                            {
+                                MainClass.Send(cs, sendStr1);
+                            }
                         }
+                        else
+                        {
+                            //房主
+                            if (MainClass.allPlayers.ContainsKey(rooms[r.id].playerName))
+                            {
+                                MainClass.Send(MainClass.allPlayers[r.playerName], sendStr);
+                            }
+                            //客户端发出文本信息，服务端需向游戏中所有人广播该文本信息
+                            foreach (string n in roomPlayers[r.id])
+                            {
+                                MainClass.Send(MainClass.allPlayers[n], sendStr);
+                            }
+                        }
+                        
                     }
                 }
             }
@@ -665,34 +731,34 @@ namespace GameServer
 
         private static void HouseInit(int roomId)
         {
-            rooms[roomId].houses.Add(2, new House(2, "教廷", 3, 200, 100, new int[] { 60, 160, 360, 660 }));
-            rooms[roomId].houses.Add(3, new House(3, "利比亚", 3, 50, 100, new int[] { 50, 150, 350, 650 }));
-            rooms[roomId].houses.Add(4, new House(4, "苏丹", 3, 60, 100, new int[] { 60, 160, 360, 660 }));
-            rooms[roomId].houses.Add(6, new House(6, "日本站", 0, 100, 0, new int[] { 100 }));
-            rooms[roomId].houses.Add(8, new House(8, "土耳其", 3, 100, 100, new int[] { 60, 160, 360, 660 }));
-            rooms[roomId].houses.Add(9, new House(9, "希腊", 3, 100, 100, new int[] { 60, 160, 360, 660 }));
-            rooms[roomId].houses.Add(10, new House(10, "保加利亚", 3, 120, 100, new int[] { 60, 160, 360, 660 }));
-            rooms[roomId].houses.Add(12, new House(12, "波兰", 3, 150, 100, new int[] { 60, 160, 360, 660 }));
-            rooms[roomId].houses.Add(13, new House(13, "俄罗斯", 3, 250, 100, new int[] { 60, 160, 360, 660 }));
-            rooms[roomId].houses.Add(14, new House(14, "乌克兰", 3, 180, 100, new int[] { 60, 160, 360, 660 }));
-            rooms[roomId].houses.Add(16, new House(16, "西班牙站", 0, 100, 0, new int[] { 100 }));
-            rooms[roomId].houses.Add(18, new House(18, "立陶宛", 3, 200, 100, new int[] { 60, 160, 360, 660 }));
-            rooms[roomId].houses.Add(19, new House(19, "拉脱维亚", 3, 200, 100, new int[] { 60, 160, 360, 660 }));
-            rooms[roomId].houses.Add(20, new House(20, "艾欧尼亚", 3, 220, 100, new int[] { 60, 160, 360, 660 }));
-            rooms[roomId].houses.Add(22, new House(22, "挪威", 3, 220, 100, new int[] { 60, 160, 360, 660 }));
-            rooms[roomId].houses.Add(23, new House(23, "瑞典", 3, 220, 100, new int[] { 60, 160, 360, 660 }));
-            rooms[roomId].houses.Add(24, new House(24, "芬兰", 3, 240, 100, new int[] { 60, 160, 360, 660 }));
-            rooms[roomId].houses.Add(26, new House(26, "美国站", 0, 100, 0, new int[] { 100 }));
-            rooms[roomId].houses.Add(28, new House(28, "德国", 3, 280, 100, new int[] { 60, 160, 360, 660 }));
-            rooms[roomId].houses.Add(29, new House(29, "法国", 3, 260, 100, new int[] { 60, 160, 360, 660 }));
-            rooms[roomId].houses.Add(30, new House(30, "英国", 3, 300, 100, new int[] { 60, 160, 360, 660 }));
-            rooms[roomId].houses.Add(32, new House(32, "加拿大", 3, 300, 100, new int[] { 60, 160, 360, 660 }));
-            rooms[roomId].houses.Add(33, new House(33, "美国", 3, 300, 100, new int[] { 60, 160, 360, 660 }));
-            rooms[roomId].houses.Add(34, new House(34, "墨西哥", 3, 320, 100, new int[] { 60, 160, 360, 660 }));
-            rooms[roomId].houses.Add(36, new House(36, "英国站", 0, 100, 0, new int[] { 100 }));
-            rooms[roomId].houses.Add(38, new House(38, "迪拜", 3, 360, 100, new int[] { 60, 160, 360, 660 }));
-            rooms[roomId].houses.Add(39, new House(39, "夏威夷", 3, 400, 100, new int[] { 60, 160, 360, 660 }));
-            rooms[roomId].houses.Add(40, new House(40, "黑子之家", 3, 999, 100, new int[] { 60, 160, 360, 660 }));
+            rooms[roomId].houses.Add(2, new House(2, "教廷", 3, 200, 100, new int[] { 100, 200, 400, 800 }));
+            rooms[roomId].houses.Add(3, new House(3, "利比亚", 3, 50, 50, new int[] { 25, 50, 100, 200 }));
+            rooms[roomId].houses.Add(4, new House(4, "苏丹", 3, 60, 50, new int[] { 30, 60, 120, 240 }));
+            rooms[roomId].houses.Add(6, new House(6, "日本站", 0, 100, 0, new int[] { 50 }));
+            rooms[roomId].houses.Add(8, new House(8, "土耳其", 3, 100, 50, new int[] { 50, 100, 200, 400 }));
+            rooms[roomId].houses.Add(9, new House(9, "希腊", 3, 100, 50, new int[] { 50, 100, 200, 400 }));
+            rooms[roomId].houses.Add(10, new House(10, "保加利亚", 3, 120, 80, new int[] { 60, 120, 240, 480 }));
+            rooms[roomId].houses.Add(12, new House(12, "波兰", 3, 150, 80, new int[] { 75, 150, 300, 600 }));
+            rooms[roomId].houses.Add(13, new House(13, "俄罗斯", 3, 250, 100, new int[] { 125, 250, 500, 800 }));
+            rooms[roomId].houses.Add(14, new House(14, "乌克兰", 3, 180, 80, new int[] { 90, 180, 360, 720 }));
+            rooms[roomId].houses.Add(16, new House(16, "西班牙站", 0, 100, 0, new int[] { 50 }));
+            rooms[roomId].houses.Add(18, new House(18, "立陶宛", 3, 200, 100, new int[] { 100, 200, 400, 800 }));
+            rooms[roomId].houses.Add(19, new House(19, "拉脱维亚", 3, 200, 100, new int[] { 100, 200, 400, 800 }));
+            rooms[roomId].houses.Add(20, new House(20, "艾欧尼亚", 3, 220, 100, new int[] { 110, 220, 440, 800 }));
+            rooms[roomId].houses.Add(22, new House(22, "挪威", 3, 220, 100, new int[] { 110, 220, 440, 800 }));
+            rooms[roomId].houses.Add(23, new House(23, "瑞典", 3, 220, 100, new int[] { 110, 220, 440, 800 }));
+            rooms[roomId].houses.Add(24, new House(24, "芬兰", 3, 240, 100, new int[] { 120, 240, 480, 800 }));
+            rooms[roomId].houses.Add(26, new House(26, "美国站", 0, 100, 0, new int[] { 50 }));
+            rooms[roomId].houses.Add(28, new House(28, "德国", 3, 280, 100, new int[] { 140, 280, 560, 1000 }));
+            rooms[roomId].houses.Add(29, new House(29, "法国", 3, 260, 100, new int[] { 130, 260, 520, 1000 }));
+            rooms[roomId].houses.Add(30, new House(30, "英国", 3, 300, 150, new int[] { 150, 300, 600, 1200 }));
+            rooms[roomId].houses.Add(32, new House(32, "加拿大", 3, 300, 150, new int[] { 150, 300, 600, 1200 }));
+            rooms[roomId].houses.Add(33, new House(33, "美国", 3, 300, 150, new int[] { 150, 300, 600, 1200 }));
+            rooms[roomId].houses.Add(34, new House(34, "墨西哥", 3, 320, 150, new int[] { 160, 320, 640, 1200 }));
+            rooms[roomId].houses.Add(36, new House(36, "英国站", 0, 100, 0, new int[] { 50 }));
+            rooms[roomId].houses.Add(38, new House(38, "迪拜", 3, 360, 150, new int[] { 180, 360, 720, 1200 }));
+            rooms[roomId].houses.Add(39, new House(39, "夏威夷", 3, 400, 200, new int[] { 200, 400, 800, 1600 }));
+            rooms[roomId].houses.Add(40, new House(40, "黑子之家", 3, 999, 500, new int[] { 500, 1000, 1500, 2000 }));
         }
 
         private static void TreasureInit(int roomId)

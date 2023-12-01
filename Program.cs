@@ -22,6 +22,7 @@ namespace GameServer
         public int playOrder;
         public int position;
         public bool isPoCan;
+        public bool isGuaJi;
         public List<int> property = new();
 
         public GameDate(int money, int color, int order, int position)
@@ -31,6 +32,7 @@ namespace GameServer
             this.playOrder = order;
             this.position = position;
             isPoCan = false;
+            isGuaJi = false;
         }
     }
 
@@ -160,7 +162,7 @@ namespace GameServer
             listenfd.Bind(ipEp);
             //Listen
             listenfd.Listen(0);
-            Console.WriteLine("[服务器]启动成功\n大富翁服务器测试版本1.0");
+            Console.WriteLine(System.DateTime.Now.ToString("G") + " [服务器]启动成功\n大富翁服务器版本1.0.0");
             /// <summary>
             /// 计时器
             /// </summary>
@@ -196,7 +198,7 @@ namespace GameServer
         //读取Listenfd
         public static void ReadListenfd(Socket listenfd)
         {
-            Console.WriteLine("Accept");
+            Console.WriteLine(System.DateTime.Now.ToString("G") + " Accept");
             Socket clientfd = listenfd.Accept();
             ClientState state = new ClientState();
             state.socket = clientfd;
@@ -220,7 +222,7 @@ namespace GameServer
 
                 clientfd.Close();
                 clients.Remove(clientfd);
-                Console.WriteLine("Receive SocketException " + ex.ToString());
+                Console.WriteLine(System.DateTime.Now.ToString("G") + " Receive SocketException " + ex.ToString());
                 return false;
             }
             //客户端关闭
@@ -232,14 +234,15 @@ namespace GameServer
 
                 clientfd.Close();
                 clients.Remove(clientfd);
-                Console.WriteLine("Socket Close");
+                Console.WriteLine(System.DateTime.Now.ToString("G") + " Socket Close");
                 return false;
             }
             //消息处理
             string recvStr =
                     System.Text.Encoding.Default.GetString(state.readBuff, 0, count);
             string[] split = recvStr.Split('|');
-            Console.WriteLine("Recv " + recvStr);
+            
+            Console.WriteLine(System.DateTime.Now.ToString("G") + " Recv " + recvStr);
             string msgName = split[0];
             string msgArgs = split[1];
             string funName = "Msg" + msgName;
@@ -252,7 +255,7 @@ namespace GameServer
         public static void Send(ClientState cs, string sendStr)
         {
             byte[] sendBytes = System.Text.Encoding.Default.GetBytes(sendStr);
-            if(cs != null)
+            if(cs.socket.Connected)
             {
                 cs.socket.Send(sendBytes);
             }
