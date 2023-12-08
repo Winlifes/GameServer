@@ -5,19 +5,25 @@ namespace GameServer
     {
         public static void OnDisconnect(ClientState c)
         {
-            string desc = c.ip;
-            string sendStr = "Leave|" + desc + "," + c.name + ",";
-            MainClass.allPlayers.Remove(c.name);
-            MainClass.clients.Remove(c.socket);
-            if(c.roomId != -1)
+            if(c.ip != "")
             {
-                MsgHandler.roomPlayers[c.roomId].Remove(c.name);
+                string desc = c.ip;
+                string sendStr = "Leave|" + desc + "," + c.name + ",";
+                if(c.name != "")
+                MainClass.allPlayers.Remove(c.name);
+                if(c.socket != null)
+                MainClass.clients.Remove(c.socket);
+                if (c.roomId != -1)
+                {
+                    MsgHandler.roomPlayers[c.roomId].Remove(c.name);
+                }
+                foreach (ClientState cs in MainClass.clients.Values)
+                {
+                    MainClass.Send(cs, sendStr);
+                }
+                IsExitRoom(c);
             }
-            foreach (ClientState cs in MainClass.clients.Values)
-            {
-                MainClass.Send(cs, sendStr);
-            }
-            IsExitRoom(c);
+            
         }
 
         public static void IsExitRoom(ClientState c)
@@ -27,11 +33,18 @@ namespace GameServer
                 if (MsgHandler.rooms[c.roomId].isBegin)
                 {
                     MsgHandler.rooms[c.roomId].gameDate[c.name].isGuaJi = true;
+
                     //广播
                     string sendStr1 = "GuaJi|" + c.ip + "," + c.roomId + "," + c.name + ",";
-                    foreach (ClientState cs in MainClass.clients.Values)
+                    //房主
+                    if (MainClass.allPlayers.ContainsKey(MsgHandler.rooms[c.roomId].playerName))
                     {
-                        MainClass.Send(cs, sendStr1);
+                        MainClass.Send(MainClass.allPlayers[MsgHandler.rooms[c.roomId].playerName], sendStr1);
+                    }
+                    //客户端发出文本信息，服务端需向游戏中所有人广播该文本信息
+                    foreach (string n in MsgHandler.roomPlayers[c.roomId])
+                    {
+                        MainClass.Send(MainClass.allPlayers[n], sendStr1);
                     }
                 }
                 else

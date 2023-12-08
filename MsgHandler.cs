@@ -14,7 +14,7 @@ namespace GameServer
         /// <summary>
         /// 当前客户端最新版本
         /// </summary>
-        static readonly string curVerion = "1.0.0";
+        static readonly string curVerion = "1.0.1";
         /// <summary>
         /// 目前以分配到的房间id
         /// </summary>
@@ -284,7 +284,10 @@ namespace GameServer
             rooms[roomId].content += "\n" + name + " : " + text;
             string sendStr = "SendInfo|" + msgArgs;
             //房主
-            MainClass.Send(MainClass.allPlayers[rooms[roomId].playerName], sendStr);
+            if (MainClass.allPlayers.ContainsKey(rooms[roomId].playerName))
+            {
+                MainClass.Send(MainClass.allPlayers[rooms[roomId].playerName], sendStr);
+            }
             //客户端发出文本信息，服务端需向游戏中所有人广播该文本信息
             foreach (string n in roomPlayers[roomId])
             {
@@ -355,8 +358,10 @@ namespace GameServer
 
             string sendStr = "Yao|" + msgArgs + num + "," + num1 + "," + num2 + ",";
             //房主
-            if(MainClass.allPlayers.ContainsKey(rooms[roomId].playerName))
-            MainClass.Send(MainClass.allPlayers[rooms[roomId].playerName], sendStr);
+            if (MainClass.allPlayers.ContainsKey(rooms[roomId].playerName))
+            {
+                MainClass.Send(MainClass.allPlayers[rooms[roomId].playerName], sendStr);
+            }
             //客户端发出文本信息，服务端需向游戏中所有人广播该文本信息
             foreach (string n in roomPlayers[roomId])
             {
@@ -379,7 +384,10 @@ namespace GameServer
 
             string sendStr = "Buy|" + msgArgs;
             //房主
-            MainClass.Send(MainClass.allPlayers[rooms[roomId].playerName], sendStr);
+            if (MainClass.allPlayers.ContainsKey(rooms[roomId].playerName))
+            {
+                MainClass.Send(MainClass.allPlayers[rooms[roomId].playerName], sendStr);
+            }
             //客户端发出文本信息，服务端需向游戏中所有人广播该文本信息
             foreach (string n in roomPlayers[roomId])
             {
@@ -402,7 +410,10 @@ namespace GameServer
 
             string sendStr = "Build|" + msgArgs;
             //房主
-            MainClass.Send(MainClass.allPlayers[rooms[roomId].playerName], sendStr);
+            if (MainClass.allPlayers.ContainsKey(rooms[roomId].playerName))
+            {
+                MainClass.Send(MainClass.allPlayers[rooms[roomId].playerName], sendStr);
+            }
             //客户端发出文本信息，服务端需向游戏中所有人广播该文本信息
             foreach (string n in roomPlayers[roomId])
             {
@@ -424,7 +435,10 @@ namespace GameServer
 
             string sendStr = "Sale|" + msgArgs;
             //房主
-            MainClass.Send(MainClass.allPlayers[rooms[roomId].playerName], sendStr);
+            if (MainClass.allPlayers.ContainsKey(rooms[roomId].playerName))
+            {
+                MainClass.Send(MainClass.allPlayers[rooms[roomId].playerName], sendStr);
+            }
             //客户端发出文本信息，服务端需向游戏中所有人广播该文本信息
             foreach (string n in roomPlayers[roomId])
             {
@@ -450,7 +464,10 @@ namespace GameServer
 
             string sendStr = "Pawn|" + msgArgs;
             //房主
-            MainClass.Send(MainClass.allPlayers[rooms[roomId].playerName], sendStr);
+            if (MainClass.allPlayers.ContainsKey(rooms[roomId].playerName))
+            {
+                MainClass.Send(MainClass.allPlayers[rooms[roomId].playerName], sendStr);
+            }
             //客户端发出文本信息，服务端需向游戏中所有人广播该文本信息
             foreach (string n in roomPlayers[roomId])
             {
@@ -476,7 +493,10 @@ namespace GameServer
 
             string sendStr = "Ransom|" + msgArgs;
             //房主
-            MainClass.Send(MainClass.allPlayers[rooms[roomId].playerName], sendStr);
+            if (MainClass.allPlayers.ContainsKey(rooms[roomId].playerName))
+            {
+                MainClass.Send(MainClass.allPlayers[rooms[roomId].playerName], sendStr);
+            }
             //客户端发出文本信息，服务端需向游戏中所有人广播该文本信息
             foreach (string n in roomPlayers[roomId])
             {
@@ -498,7 +518,10 @@ namespace GameServer
 
             string sendStr = "Vehicle|" + msgArgs;
             //房主
-            MainClass.Send(MainClass.allPlayers[rooms[roomId].playerName], sendStr);
+            if (MainClass.allPlayers.ContainsKey(rooms[roomId].playerName))
+            {
+                MainClass.Send(MainClass.allPlayers[rooms[roomId].playerName], sendStr);
+            }
             //客户端发出文本信息，服务端需向游戏中所有人广播该文本信息
             foreach (string n in roomPlayers[roomId])
             {
@@ -556,7 +579,10 @@ namespace GameServer
             sendStr += rooms[roomId].curOrder + ",";
 
             //房主
-            MainClass.Send(MainClass.allPlayers[rooms[roomId].playerName], sendStr);
+            if (MainClass.allPlayers.ContainsKey(rooms[roomId].playerName))
+            {
+                MainClass.Send(MainClass.allPlayers[rooms[roomId].playerName], sendStr);
+            }
             //客户端发出文本信息，服务端需向游戏中所有人广播该文本信息
             foreach (string n in roomPlayers[roomId])
             {
@@ -703,7 +729,7 @@ namespace GameServer
                         if (!MainClass.allPlayers.ContainsKey(rooms[r.id].playerName) && roomPlayers[r.id].Count <= 0)
                         {
                             rooms.Remove(r.id);
-                            Console.WriteLine(System.DateTime.Now.ToString("G") + "Destroy Room " +  r.id);
+                            Console.WriteLine(System.DateTime.Now.ToString("G") + " Destroy Room " +  r.id);
                             string sendStr1 = "Destroy|" + "desc," + r.id + ",";
                             foreach (ClientState cs in MainClass.clients.Values)
                             {

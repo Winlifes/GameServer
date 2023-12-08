@@ -7,10 +7,10 @@ namespace GameServer
     public class ClientState
     {
         public Socket socket;
-        public string ip;
+        public string ip = "";
         public byte[] readBuff = new byte[1024];
 
-        public string name;
+        public string name = "";
         public int roomId = -1;
 
     }
@@ -44,7 +44,7 @@ namespace GameServer
         public int level;
         public int maxLevel;
         public int up;
-        public string playerName;
+        public string playerName = "";
         /// <summary>
         /// 租金
         /// </summary>
@@ -103,11 +103,11 @@ namespace GameServer
         /// <summary>
         /// 房主
         /// </summary>
-        public string playerName;
+        public string playerName = "";
         /// <summary>
         /// 房间密码
         /// </summary>
-        public string pawd;
+        public string pawd = "";
         /// <summary>
         /// 当前房间人数，包括房主
         /// </summary>
@@ -145,7 +145,7 @@ namespace GameServer
     class MainClass
     {
         //监听Socket
-        public static Socket listenfd;
+        public static Socket? listenfd;
         /// <summary>
         /// 所有客户端Socket及状态信息
         /// </summary>
@@ -162,11 +162,11 @@ namespace GameServer
             listenfd.Bind(ipEp);
             //Listen
             listenfd.Listen(0);
-            Console.WriteLine(System.DateTime.Now.ToString("G") + " [服务器]启动成功\n大富翁服务器版本1.0.0");
+            Console.WriteLine(System.DateTime.Now.ToString("G") + " [服务器]启动成功\n大富翁服务器 版本1.0.13");
             /// <summary>
             /// 计时器
             /// </summary>
-            Timer timer = new Timer(MsgHandler.TimerCallback, null, 0, 1000);
+            Timer timer = new(MsgHandler.TimerCallback, null, 0, 1000);
             //checkRead
             List<Socket> checkRead = new List<Socket>();
             //主循环
@@ -184,14 +184,18 @@ namespace GameServer
                 //检查可读对象
                 foreach (Socket s in checkRead)
                 {
-                    if (s == listenfd)
+                    if (s != null)
                     {
-                        ReadListenfd(s);
+                        if (s == listenfd)
+                        {
+                            ReadListenfd(s);
+                        }
+                        else
+                        {
+                            ReadClientfd(s);
+                        }
                     }
-                    else
-                    {
-                        ReadClientfd(s);
-                    }
+
                 }
             }
         }
@@ -207,55 +211,69 @@ namespace GameServer
         //读取Clientfd
         public static bool ReadClientfd(Socket clientfd)
         {
-            ClientState state = clients[clientfd];
-            //接收
-            int count = 0;
-            try
+            if (clients.ContainsKey(clientfd))
             {
-                count = clientfd.Receive(state.readBuff);
-            }
-            catch (SocketException ex)
-            {
-                MethodInfo mei = typeof(EventHandler).GetMethod("OnDisconnect");
-                object[] ob = { state };
-                mei.Invoke(null, ob);
+                ClientState state = clients[clientfd];
+                //接收
+                int count;
+                try
+                {
+                    count = clientfd.Receive(state.readBuff);
+                }
+                catch (SocketException ex)
+                {
+                    MethodInfo mei = typeof(EventHandler).GetMethod("OnDisconnect");
+                    object[] ob = { state };
+                    mei.Invoke(null, ob);
 
-                clientfd.Close();
-                clients.Remove(clientfd);
-                Console.WriteLine(System.DateTime.Now.ToString("G") + " Receive SocketException " + ex.ToString());
+                    clientfd.Close();
+                    clients.Remove(clientfd);
+                    Console.WriteLine(System.DateTime.Now.ToString("G") + " Receive SocketException " + ex.ToString());
+                    return false;
+                }
+                //客户端关闭
+                if (count <= 0)
+                {
+                    MethodInfo mei = typeof(EventHandler).GetMethod("OnDisconnect");
+                    object[] ob = { state };
+                    mei.Invoke(null, ob);
+
+                    clientfd.Close();
+                    clients.Remove(clientfd);
+                    Console.WriteLine(System.DateTime.Now.ToString("G") + " Socket Close");
+                    return false;
+                }
+                //消息处理
+                string recvStr =
+                        System.Text.Encoding.Default.GetString(state.readBuff, 0, count);
+                string[] split = recvStr.Split('|');
+
+                Console.WriteLine(System.DateTime.Now.ToString("G") + " Recv " + recvStr);
+                string msgName = split[0];
+                if (split.Length > 1)
+                {
+                    string msgArgs = split[1];
+                    if (msgName != "")
+                    {
+                        string funName = "Msg" + msgName;
+                        MethodInfo mi = typeof(MsgHandler).GetMethod(funName);
+                        object[] o = { state, msgArgs };
+                        mi.Invoke(null, o);
+                        return true;
+                    }
+                }
                 return false;
             }
-            //客户端关闭
-            if (count <= 0)
+            else
             {
-                MethodInfo mei = typeof(EventHandler).GetMethod("OnDisconnect");
-                object[] ob = { state };
-                mei.Invoke(null, ob);
-
-                clientfd.Close();
-                clients.Remove(clientfd);
-                Console.WriteLine(System.DateTime.Now.ToString("G") + " Socket Close");
                 return false;
             }
-            //消息处理
-            string recvStr =
-                    System.Text.Encoding.Default.GetString(state.readBuff, 0, count);
-            string[] split = recvStr.Split('|');
-            
-            Console.WriteLine(System.DateTime.Now.ToString("G") + " Recv " + recvStr);
-            string msgName = split[0];
-            string msgArgs = split[1];
-            string funName = "Msg" + msgName;
-            MethodInfo mi = typeof(MsgHandler).GetMethod(funName);
-            object[] o = { state, msgArgs };
-            mi.Invoke(null, o);
-            return true;
         }
         //发送
         public static void Send(ClientState cs, string sendStr)
         {
             byte[] sendBytes = System.Text.Encoding.Default.GetBytes(sendStr);
-            if(cs.socket.Connected)
+            if (cs.socket.Connected)
             {
                 cs.socket.Send(sendBytes);
             }
